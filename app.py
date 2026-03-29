@@ -515,16 +515,6 @@ elif filter_ai == 'DeDecker in AI':
 elif filter_ai == 'AI Gap':
     dff = dff[(dff['has_ai'] == True) & (dff['dedecker_in_ai'] != True)]
 
-# Results summary
-col_res1, col_res2, col_res3 = st.columns(3)
-with col_res1:
-    st.markdown(f"**{len(dff)} keywords**")
-with col_res2:
-    st.markdown(f"**{dff['volume'].sum():,} volume**")
-with col_res3:
-    filtered_top10 = len(dff[dff['pos_dedecker'] <= 10])
-    st.markdown(f"**{filtered_top10} in Top 10**")
-
 # Legend for position colors
 st.markdown("""
 <div style="display: flex; gap: 1rem; margin-bottom: 0.5rem; font-size: 0.8rem;">
