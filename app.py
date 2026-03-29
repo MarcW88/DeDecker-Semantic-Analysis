@@ -11,6 +11,43 @@ st.set_page_config(
     layout="wide"
 )
 
+# Password protection
+def check_password():
+    """Returns True if the user has entered the correct password."""
+    def password_entered():
+        if st.session_state["password"] == "dedecker2026":
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        st.markdown("""
+        <style>
+            .block-container {max-width: 400px; margin: auto; padding-top: 5rem;}
+        </style>
+        """, unsafe_allow_html=True)
+        st.image(str(Path(__file__).parent / "logo-dedecker.png"), width=150)
+        st.markdown("### Semantic Analysis Dashboard")
+        st.text_input("Password", type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state["password_correct"]:
+        st.markdown("""
+        <style>
+            .block-container {max-width: 400px; margin: auto; padding-top: 5rem;}
+        </style>
+        """, unsafe_allow_html=True)
+        st.image(str(Path(__file__).parent / "logo-dedecker.png"), width=150)
+        st.markdown("### Semantic Analysis Dashboard")
+        st.text_input("Password", type="password", on_change=password_entered, key="password")
+        st.error("Incorrect password")
+        return False
+    else:
+        return True
+
+if not check_password():
+    st.stop()
+
 # DeDecker brand colors: taupe #B8A99A, dark #1a1a1a, warm white #f9f7f5
 DEDECKER_TAUPE = '#B8A99A'
 DEDECKER_DARK = '#2d2d2d'
