@@ -298,18 +298,42 @@ with chart1:
     st.plotly_chart(fig, use_container_width=True)
 
 with chart2:
-    # Category table with styled header
+    # Category table with styled header (HTML for full control)
     cat_display = cat_stats[[group_col, 'volume', 'keywords', 'top10', 'avg_pos', 'not_ranked']].copy()
     col_name = 'Category' if view_level == "Categories" else 'Subcategory'
     cat_display.columns = [col_name, 'Volume', 'Keywords', 'Top 10', 'Avg Pos', 'Not Ranked']
     cat_display = cat_display.sort_values('Volume', ascending=False)
     cat_display['Avg Pos'] = cat_display['Avg Pos'].round(1)
     
-    # Style with DeDecker header
-    styled_cat = cat_display.style.set_table_styles([
-        {'selector': 'th', 'props': [('background-color', '#B8A99A'), ('color', '#2d2d2d'), ('font-weight', '600')]}
-    ])
-    st.dataframe(styled_cat, use_container_width=True, height=400, hide_index=True)
+    # Convert to HTML with DeDecker styled header
+    html_table = cat_display.to_html(index=False, classes='dedecker-table')
+    st.markdown(f"""
+    <style>
+        .dedecker-table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }}
+        .dedecker-table th {{
+            background-color: #B8A99A !important;
+            color: #2d2d2d !important;
+            font-weight: 600;
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 2px solid #8B7355;
+        }}
+        .dedecker-table td {{
+            padding: 8px;
+            border-bottom: 1px solid #e5e0db;
+        }}
+        .dedecker-table tr:hover {{
+            background-color: #f5f2ef;
+        }}
+    </style>
+    <div style="max-height: 380px; overflow-y: auto;">
+        {html_table}
+    </div>
+    """, unsafe_allow_html=True)
 
 # ============================================
 # 3. COMPETITIVE LANDSCAPE - SOV global + SOV by category
