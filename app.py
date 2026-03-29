@@ -102,14 +102,21 @@ st.markdown("""
         color: #2d2d2d;
     }
     /* DeDecker styled table headers for st.table */
-    .stTable thead th {
+    .stTable thead th, table thead th {
         background-color: #B8A99A !important;
-        color: #2d2d2d !important;
+        color: white !important;
         font-weight: 600 !important;
     }
-    table thead th {
-        background-color: #B8A99A !important;
-        color: #2d2d2d !important;
+    /* Table rows white background */
+    .stTable tbody tr, table tbody tr {
+        background-color: white !important;
+    }
+    /* Hide index column */
+    .stTable tbody tr td:first-child, table tbody tr td:first-child {
+        display: none;
+    }
+    .stTable thead th:first-child, table thead th:first-child {
+        display: none;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -323,7 +330,8 @@ with chart2:
     col_name = 'Category' if view_level == "Categories" else 'Subcategory'
     cat_display.columns = [col_name, 'Volume', 'Keywords', 'Top 10', 'Avg Pos', 'Not Ranked']
     cat_display = cat_display.sort_values('Volume', ascending=False).reset_index(drop=True)
-    cat_display['Avg Pos'] = cat_display['Avg Pos'].round(1)
+    cat_display['Avg Pos'] = cat_display['Avg Pos'].round(1).astype(str).str.replace('.0', '', regex=False)
+    cat_display.index = [''] * len(cat_display)  # Hide index
     st.table(cat_display)
 
 # ============================================
@@ -431,6 +439,7 @@ for cat in df['category'].dropna().unique():
     })
 
 leader_df = pd.DataFrame(leader_data).sort_values('Gap %', ascending=False).reset_index(drop=True)
+leader_df.index = [''] * len(leader_df)  # Hide index
 st.table(leader_df)
 
 # ============================================
