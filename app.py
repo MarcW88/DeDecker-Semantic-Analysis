@@ -185,7 +185,7 @@ logo_path = Path(__file__).parent / "dedecker-logo-1741616178.png"
 
 header_col1, header_col2, header_col3 = st.columns([2, 4, 1])
 with header_col3:
-    market = st.radio("Market", ["Belgium NL", "Belgium FR"], horizontal=False, label_visibility="collapsed")
+    market = st.selectbox("Market", ["Belgium NL", "Belgium FR"], label_visibility="collapsed")
 market_code = 'BENL' if market == "Belgium NL" else 'BEFR'
 
 df, available_comp = load_data(market_code)
