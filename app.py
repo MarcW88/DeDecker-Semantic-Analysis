@@ -475,9 +475,9 @@ with ai2:
 with ai3:
     df_ai_table = df[df['has_ai'] == True][['keyword', 'volume', 'category', 'pos_dedecker', 'dedecker_in_ai']].copy()
     df_ai_table.columns = ['Keyword', 'Volume', 'Category', 'Position', 'In AI']
-    df_ai_table = df_ai_table.sort_values('Volume', ascending=False).head(12)
+    df_ai_table = df_ai_table.sort_values('Volume', ascending=False)
     df_ai_table['In AI'] = df_ai_table['In AI'].apply(lambda x: 'Yes' if x else 'No')
-    st.dataframe(df_ai_table, use_container_width=True, height=250, hide_index=True)
+    st.dataframe(df_ai_table, use_container_width=True, height=300, hide_index=True)
 
 # ============================================
 # 5. KEYWORD EXPLORER (with heatmap moved here)
