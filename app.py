@@ -257,7 +257,7 @@ with chart1:
     fig = px.bar(
         cat_bucket,
         x=group_col,
-        y='pct',
+        y='count',
         color='position_bucket',
         color_discrete_map={
             'Top 3': '#8B7355',
@@ -267,7 +267,7 @@ with chart1:
             'Not ranked': '#c9a59a'
         },
         category_orders={'position_bucket': bucket_order},
-        labels={'pct': '% Keywords', group_col: '', 'position_bucket': 'Position'},
+        labels={'count': 'Keywords', group_col: '', 'position_bucket': 'Position'},
         barmode='stack'
     )
     fig.update_layout(
@@ -276,7 +276,7 @@ with chart1:
         title=dict(text="Position Distribution by Category", font=dict(size=14)),
         plot_bgcolor='white',
         legend=dict(orientation='h', y=-0.15),
-        yaxis=dict(range=[0, 100], gridcolor='#f0f0f0')
+        yaxis=dict(gridcolor='#f0f0f0')
     )
     st.plotly_chart(fig, use_container_width=True)
 
@@ -373,20 +373,27 @@ for cat in df['category'].dropna().unique():
     for c in available_comp:
         scores[c] = len(df_cat[df_cat[c] <= 10])
     
-    leader = max(scores, key=scores.get)
-    leader_pct = (scores[leader] / cat_total * 100) if cat_total > 0 else 0
+    # Only consider as leader if someone has at least 1 position in top 10
+    max_score = max(scores.values())
+    if max_score == 0:
+        leader = '-'
+        leader_pct = 0
+    else:
+        leader = max(scores, key=scores.get)
+        leader_pct = (scores[leader] / cat_total * 100) if cat_total > 0 else 0
+    
     dedecker_pct = (scores['DeDecker'] / cat_total * 100) if cat_total > 0 else 0
-    gap = leader_pct - dedecker_pct if leader != 'DeDecker' else 0
+    gap = leader_pct - dedecker_pct if leader != 'DeDecker' and leader != '-' else 0
     
     leader_data.append({
         'Category': cat,
         'Leader': leader,
         'Leader %': round(leader_pct, 1),
         'DeDecker %': round(dedecker_pct, 1),
-        'Gap': round(gap, 1)
+        'Gap %': round(gap, 1)
     })
 
-leader_df = pd.DataFrame(leader_data).sort_values('Gap', ascending=False)
+leader_df = pd.DataFrame(leader_data).sort_values('Gap %', ascending=False)
 st.dataframe(leader_df, use_container_width=True, hide_index=True)
 
 # ============================================
