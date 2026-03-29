@@ -27,7 +27,7 @@ def check_password():
             .block-container {max-width: 400px; margin: auto; padding-top: 5rem;}
         </style>
         """, unsafe_allow_html=True)
-        st.image(str(Path(__file__).parent / "logo-dedecker.png"), width=150)
+        st.image(str(Path(__file__).parent / "dedecker_logo.png"), width=150)
         st.markdown("### Semantic Analysis Dashboard")
         st.text_input("Password", type="password", on_change=password_entered, key="password")
         return False
@@ -37,7 +37,7 @@ def check_password():
             .block-container {max-width: 400px; margin: auto; padding-top: 5rem;}
         </style>
         """, unsafe_allow_html=True)
-        st.image(str(Path(__file__).parent / "logo-dedecker.png"), width=150)
+        st.image(str(Path(__file__).parent / "dedecker_logo.png"), width=150)
         st.markdown("### Semantic Analysis Dashboard")
         st.text_input("Password", type="password", on_change=password_entered, key="password")
         st.error("Incorrect password")
@@ -56,7 +56,12 @@ DEDECKER_ACCENT = '#8B7355'
 
 st.markdown("""
 <style>
-    .block-container {padding: 1.5rem 2rem; background: #f9f7f5;}
+    /* Hide Streamlit header and footer */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    .block-container {padding: 1rem 2rem; background: #f9f7f5;}
     .main-title {font-size: 1.6rem; font-weight: 600; color: #2d2d2d; margin-bottom: 0; font-family: sans-serif;}
     .subtitle {font-size: 0.9rem; color: #666; margin-bottom: 1rem;}
     .section-header {
@@ -83,7 +88,19 @@ st.markdown("""
     .stDataFrame {background: white; border-radius: 8px; border: 1px solid #e5e0db;}
     section[data-testid="stSidebar"] {background: #f0ebe6;}
     .stRadio > div {gap: 0.5rem;}
+    /* DeDecker style for multiselect tags */
     .stMultiSelect > div {border-color: #e5e0db;}
+    .stMultiSelect span[data-baseweb="tag"] {
+        background-color: #B8A99A !important;
+        color: #2d2d2d !important;
+    }
+    .stMultiSelect span[data-baseweb="tag"] span {
+        color: #2d2d2d !important;
+    }
+    /* Radio button accent color */
+    .stRadio > div > label > div[data-testid="stMarkdownContainer"] {
+        color: #2d2d2d;
+    }
     /* DeDecker table headers */
     .stDataFrame thead th {
         background-color: #B8A99A !important;
@@ -149,7 +166,7 @@ available_comp = [c for c in competitors if c in df.columns]
 # ============================================
 # HEADER with logo
 # ============================================
-logo_path = Path(__file__).parent / "logo-dedecker.png"
+logo_path = Path(__file__).parent / "dedecker_logo.png"
 header_col1, header_col2 = st.columns([1, 5])
 with header_col1:
     if logo_path.exists():
