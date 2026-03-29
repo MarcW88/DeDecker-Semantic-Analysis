@@ -105,26 +105,47 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 @st.cache_data(ttl=10)
-def load_data():
-    file_path = Path(__file__).parent / "Keyword Analysis_ DeDecker Keukens _ 202603.xlsx"
-    if not file_path.exists():
-        return None
-    df = pd.read_excel(file_path, sheet_name='BENL')
-    df.columns = df.columns.str.strip()
-    # Normalize category names (strip whitespace and fix case issues)
+def load_data(market='BENL'):
+    if market == 'BENL':
+        file_path = Path(__file__).parent / "Keyword Analysis_ DeDecker Keukens _ 202603.xlsx"
+        if not file_path.exists():
+            return None, []
+        df = pd.read_excel(file_path, sheet_name='BENL')
+        df.columns = df.columns.str.strip()
+        df = df.rename(columns={
+            'Positions DeDecker': 'pos_dedecker',
+            'URL DeDecker': 'url_dedecker',
+            'Presence AI_Overview': 'has_ai',
+            'Presence AI_Overview DeDecker': 'dedecker_in_ai',
+            'Sources AI_Overview_DeDecker': 'ai_sources'
+        })
+        competitors = ['Eggo', 'Ixina', 'Kvik', 'Dovy']
+    else:  # BEFR
+        file_path = Path(__file__).parent / "Keyword_Research_DeDecker_BEFR.xlsx"
+        if not file_path.exists():
+            return None, []
+        df = pd.read_excel(file_path)
+        df.columns = df.columns.str.strip()
+        df = df.rename(columns={
+            'client_pos': 'pos_dedecker',
+            'client_url': 'url_dedecker',
+            'has_ai_overview': 'has_ai',
+            'client_in_ai': 'dedecker_in_ai',
+            'client_ai_sources': 'ai_sources',
+            'eggo.be_pos': 'Eggo',
+            'ixina.be_pos': 'Ixina',
+            'kvik.be_pos': 'Kvik',
+            'cuisinesdovy.be_pos': 'Dovy'
+        })
+        competitors = ['Eggo', 'Ixina', 'Kvik', 'Dovy']
+    
+    # Normalize category names
     if 'category' in df.columns:
         df['category'] = df['category'].str.strip()
-        # Fix keukens -> Keukens
         df['category'] = df['category'].replace({'keukens': 'Keukens'})
     if 'subcategory' in df.columns:
         df['subcategory'] = df['subcategory'].str.strip()
-    df = df.rename(columns={
-        'Positions DeDecker': 'pos_dedecker',
-        'URL DeDecker': 'url_dedecker',
-        'Presence AI_Overview': 'has_ai',
-        'Presence AI_Overview DeDecker': 'dedecker_in_ai',
-        'Sources AI_Overview_DeDecker': 'ai_sources'
-    })
+    
     for col in ['pos_dedecker', 'Eggo', 'Ixina', 'Kvik', 'Dovy']:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -143,31 +164,37 @@ def load_data():
             return "20+"
     
     df['position_bucket'] = df['pos_dedecker'].apply(get_position_bucket)
+    available_comp = [c for c in competitors if c in df.columns]
     
-    return df
+    return df, available_comp
 
-df = load_data()
+# ============================================
+# HEADER with logo and market selector
+# ============================================
+logo_path = Path(__file__).parent / "dedecker-logo-1741616178.png"
+
+header_col1, header_col2, header_col3 = st.columns([2, 4, 1])
+with header_col3:
+    market = st.radio("Market", ["Belgium NL", "Belgium FR"], horizontal=False, label_visibility="collapsed")
+market_code = 'BENL' if market == "Belgium NL" else 'BEFR'
+
+df, available_comp = load_data(market_code)
 if df is None:
     st.error("File not found")
     st.stop()
 
-competitors = ['Eggo', 'Ixina', 'Kvik', 'Dovy']
-available_comp = [c for c in competitors if c in df.columns]
-
-# ============================================
-# HEADER with logo - improved design
-# ============================================
-logo_path = Path(__file__).parent / "dedecker-logo-1741616178.png"
-
 st.markdown("""
 <div style="display: flex; align-items: center; gap: 1.5rem; padding: 1rem 0 1.5rem 0; border-bottom: 3px solid #B8A99A; margin-bottom: 1.5rem;">
-    <img src="data:image/png;base64,{}" style="height: 60px; width: auto;" />
+    <img src="data:image/png;base64,{logo}" style="height: 60px; width: auto;" />
     <div>
         <h1 style="margin: 0; font-size: 1.8rem; font-weight: 600; color: #2d2d2d;">DeDecker Keukens — Semantic Analysis</h1>
-        <p style="margin: 0.2rem 0 0 0; font-size: 0.95rem; color: #666;">Belgium NL · March 2026</p>
+        <p style="margin: 0.2rem 0 0 0; font-size: 0.95rem; color: #666;">{market} · March 2026</p>
     </div>
 </div>
-""".format(__import__('base64').b64encode(open(str(logo_path), 'rb').read()).decode()), unsafe_allow_html=True)
+""".format(
+    logo=__import__('base64').b64encode(open(str(logo_path), 'rb').read()).decode(),
+    market=market
+), unsafe_allow_html=True)
 
 # ============================================
 # 1. KPIs (original 6 cards)
