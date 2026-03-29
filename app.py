@@ -101,23 +101,6 @@ st.markdown("""
     .stRadio > div > label > div[data-testid="stMarkdownContainer"] {
         color: #2d2d2d;
     }
-    /* DeDecker styled table headers for st.table */
-    .stTable thead th, table thead th {
-        background-color: #B8A99A !important;
-        color: white !important;
-        font-weight: 600 !important;
-    }
-    /* Table rows white background */
-    .stTable tbody tr, table tbody tr {
-        background-color: white !important;
-    }
-    /* Hide index column */
-    .stTable tbody tr td:first-child, table tbody tr td:first-child {
-        display: none;
-    }
-    .stTable thead th:first-child, table thead th:first-child {
-        display: none;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -329,10 +312,9 @@ with chart2:
     cat_display = cat_stats[[group_col, 'volume', 'keywords', 'top10', 'avg_pos', 'not_ranked']].copy()
     col_name = 'Category' if view_level == "Categories" else 'Subcategory'
     cat_display.columns = [col_name, 'Volume', 'Keywords', 'Top 10', 'Avg Pos', 'Not Ranked']
-    cat_display = cat_display.sort_values('Volume', ascending=False).reset_index(drop=True)
-    cat_display['Avg Pos'] = cat_display['Avg Pos'].round(1).astype(str).str.replace('.0', '', regex=False)
-    cat_display.index = [''] * len(cat_display)  # Hide index
-    st.table(cat_display)
+    cat_display = cat_display.sort_values('Volume', ascending=False)
+    cat_display['Avg Pos'] = cat_display['Avg Pos'].round(1)
+    st.dataframe(cat_display, use_container_width=True, height=400, hide_index=True)
 
 # ============================================
 # 3. COMPETITIVE LANDSCAPE - SOV global + SOV by category
@@ -438,9 +420,8 @@ for cat in df['category'].dropna().unique():
         'Gap %': round(gap, 1)
     })
 
-leader_df = pd.DataFrame(leader_data).sort_values('Gap %', ascending=False).reset_index(drop=True)
-leader_df.index = [''] * len(leader_df)  # Hide index
-st.table(leader_df)
+leader_df = pd.DataFrame(leader_data).sort_values('Gap %', ascending=False)
+st.dataframe(leader_df, use_container_width=True, hide_index=True)
 
 # ============================================
 # 4. AI OVERVIEW ANALYSIS
