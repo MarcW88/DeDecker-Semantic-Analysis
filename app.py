@@ -101,6 +101,16 @@ st.markdown("""
     .stRadio > div > label > div[data-testid="stMarkdownContainer"] {
         color: #2d2d2d;
     }
+    /* DeDecker styled table headers for st.table */
+    .stTable thead th {
+        background-color: #B8A99A !important;
+        color: #2d2d2d !important;
+        font-weight: 600 !important;
+    }
+    table thead th {
+        background-color: #B8A99A !important;
+        color: #2d2d2d !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -312,9 +322,9 @@ with chart2:
     cat_display = cat_stats[[group_col, 'volume', 'keywords', 'top10', 'avg_pos', 'not_ranked']].copy()
     col_name = 'Category' if view_level == "Categories" else 'Subcategory'
     cat_display.columns = [col_name, 'Volume', 'Keywords', 'Top 10', 'Avg Pos', 'Not Ranked']
-    cat_display = cat_display.sort_values('Volume', ascending=False)
+    cat_display = cat_display.sort_values('Volume', ascending=False).reset_index(drop=True)
     cat_display['Avg Pos'] = cat_display['Avg Pos'].round(1)
-    st.dataframe(cat_display, use_container_width=True, height=400, hide_index=True)
+    st.table(cat_display)
 
 # ============================================
 # 3. COMPETITIVE LANDSCAPE - SOV global + SOV by category
@@ -420,8 +430,8 @@ for cat in df['category'].dropna().unique():
         'Gap %': round(gap, 1)
     })
 
-leader_df = pd.DataFrame(leader_data).sort_values('Gap %', ascending=False)
-st.dataframe(leader_df, use_container_width=True, hide_index=True)
+leader_df = pd.DataFrame(leader_data).sort_values('Gap %', ascending=False).reset_index(drop=True)
+st.table(leader_df)
 
 # ============================================
 # 4. AI OVERVIEW ANALYSIS
