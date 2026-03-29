@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+
+# Environment
+.env
+*.env.local
+
+# Credentials
+credentials/
+*.json
+
+# Data
+data/
+*.csv
+*.xlsx
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Keep auth config in gitignore for security
+# auth_config.yaml
