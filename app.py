@@ -101,14 +101,22 @@ st.markdown("""
     .stRadio > div > label > div[data-testid="stMarkdownContainer"] {
         color: #2d2d2d;
     }
-    /* DeDecker table headers */
-    .stDataFrame thead th {
+    /* DeDecker table headers - multiple selectors for compatibility */
+    .stDataFrame thead th,
+    div[data-testid="stDataFrame"] th,
+    [data-testid="stDataFrame"] thead tr th,
+    .dvn-scroller thead th,
+    .glideDataEditor th,
+    [data-testid="glideDataEditor"] th,
+    div[data-testid="stDataFrameResizable"] thead th {
         background-color: #B8A99A !important;
         color: #2d2d2d !important;
+        font-weight: 600 !important;
     }
-    div[data-testid="stDataFrame"] th {
+    /* Target the actual header cells in Streamlit's data editor */
+    .dvn-scroller .header-cell,
+    [class*="header"] {
         background-color: #B8A99A !important;
-        color: #2d2d2d !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -259,11 +267,11 @@ cat_stats['not_ranked'] = cat_stats['not_ranked'].astype(int)
 chart1, chart2 = st.columns(2)
 
 with chart1:
-    # Stacked bar: position distribution by category/subcategory
+    # Stacked bar: position distribution by category/subcategory (absolute values)
     fig = px.bar(
         cat_bucket,
         x=group_col,
-        y='pct',
+        y='count',
         color='position_bucket',
         color_discrete_map={
             'Top 3': '#8B7355',
@@ -273,7 +281,7 @@ with chart1:
             'Not ranked': '#c9a59a'
         },
         category_orders={'position_bucket': bucket_order},
-        labels={'pct': '% Keywords', group_col: '', 'position_bucket': 'Position'},
+        labels={'count': 'Keywords', group_col: '', 'position_bucket': 'Position'},
         barmode='stack'
     )
     fig.update_layout(
@@ -282,7 +290,7 @@ with chart1:
         title=dict(text="Position Distribution by Category", font=dict(size=14)),
         plot_bgcolor='white',
         legend=dict(orientation='h', y=-0.15),
-        yaxis=dict(range=[0, 100], gridcolor='#f0f0f0')
+        yaxis=dict(gridcolor='#f0f0f0')
     )
     st.plotly_chart(fig, use_container_width=True)
 
