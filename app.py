@@ -101,22 +101,22 @@ st.markdown("""
     .stRadio > div > label > div[data-testid="stMarkdownContainer"] {
         color: #2d2d2d;
     }
-    /* DeDecker table headers - multiple selectors for compatibility */
-    .stDataFrame thead th,
-    div[data-testid="stDataFrame"] th,
-    [data-testid="stDataFrame"] thead tr th,
-    .dvn-scroller thead th,
-    .glideDataEditor th,
-    [data-testid="glideDataEditor"] th,
-    div[data-testid="stDataFrameResizable"] thead th {
+    /* DeDecker table headers - target glide-data-grid header row */
+    [data-testid="stDataFrame"] [data-testid="glideDataEditor"] > div:first-child,
+    .dvn-scroller [data-testid="data-grid-canvas"] div[style*="position: sticky"],
+    div[class*="glideDataEditor"] div[style*="background"][style*="sticky"] {
+        background-color: #B8A99A !important;
+    }
+    /* Alternative: style via column headers */
+    [data-testid="stDataFrameResizable"] canvas + div,
+    [data-testid="column-header-row"] {
+        background-color: #B8A99A !important;
+    }
+    /* Fallback for older Streamlit versions */
+    .stDataFrame thead,
+    .stDataFrame th {
         background-color: #B8A99A !important;
         color: #2d2d2d !important;
-        font-weight: 600 !important;
-    }
-    /* Target the actual header cells in Streamlit's data editor */
-    .dvn-scroller .header-cell,
-    [class*="header"] {
-        background-color: #B8A99A !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -267,11 +267,11 @@ cat_stats['not_ranked'] = cat_stats['not_ranked'].astype(int)
 chart1, chart2 = st.columns(2)
 
 with chart1:
-    # Stacked bar: position distribution by category/subcategory (absolute values)
+    # Stacked bar: position distribution by category/subcategory
     fig = px.bar(
         cat_bucket,
         x=group_col,
-        y='count',
+        y='pct',
         color='position_bucket',
         color_discrete_map={
             'Top 3': '#8B7355',
@@ -281,7 +281,7 @@ with chart1:
             'Not ranked': '#c9a59a'
         },
         category_orders={'position_bucket': bucket_order},
-        labels={'count': 'Keywords', group_col: '', 'position_bucket': 'Position'},
+        labels={'pct': '% Keywords', group_col: '', 'position_bucket': 'Position'},
         barmode='stack'
     )
     fig.update_layout(
@@ -290,18 +290,23 @@ with chart1:
         title=dict(text="Position Distribution by Category", font=dict(size=14)),
         plot_bgcolor='white',
         legend=dict(orientation='h', y=-0.15),
-        yaxis=dict(gridcolor='#f0f0f0')
+        yaxis=dict(range=[0, 100], gridcolor='#f0f0f0')
     )
     st.plotly_chart(fig, use_container_width=True)
 
 with chart2:
-    # Category table
+    # Category table with styled header
     cat_display = cat_stats[[group_col, 'volume', 'keywords', 'top10', 'avg_pos', 'not_ranked']].copy()
     col_name = 'Category' if view_level == "Categories" else 'Subcategory'
     cat_display.columns = [col_name, 'Volume', 'Keywords', 'Top 10', 'Avg Pos', 'Not Ranked']
     cat_display = cat_display.sort_values('Volume', ascending=False)
     cat_display['Avg Pos'] = cat_display['Avg Pos'].round(1)
-    st.dataframe(cat_display, use_container_width=True, height=400, hide_index=True)
+    
+    # Style with DeDecker header
+    styled_cat = cat_display.style.set_table_styles([
+        {'selector': 'th', 'props': [('background-color', '#B8A99A'), ('color', '#2d2d2d'), ('font-weight', '600')]}
+    ])
+    st.dataframe(styled_cat, use_container_width=True, height=400, hide_index=True)
 
 # ============================================
 # 3. COMPETITIVE LANDSCAPE - SOV global + SOV by category
