@@ -27,7 +27,7 @@ def check_password():
             .block-container {max-width: 400px; margin: auto; padding-top: 5rem;}
         </style>
         """, unsafe_allow_html=True)
-        st.image(str(Path(__file__).parent / "dedecker_logo.png"), width=150)
+        st.image(str(Path(__file__).parent / "dedecker-logo-1741616178.png"), width=150)
         st.markdown("### Semantic Analysis Dashboard")
         st.text_input("Password", type="password", on_change=password_entered, key="password")
         return False
@@ -37,7 +37,7 @@ def check_password():
             .block-container {max-width: 400px; margin: auto; padding-top: 5rem;}
         </style>
         """, unsafe_allow_html=True)
-        st.image(str(Path(__file__).parent / "dedecker_logo.png"), width=150)
+        st.image(str(Path(__file__).parent / "dedecker-logo-1741616178.png"), width=150)
         st.markdown("### Semantic Analysis Dashboard")
         st.text_input("Password", type="password", on_change=password_entered, key="password")
         st.error("Incorrect password")
@@ -172,16 +172,19 @@ competitors = ['Eggo', 'Ixina', 'Kvik', 'Dovy']
 available_comp = [c for c in competitors if c in df.columns]
 
 # ============================================
-# HEADER with logo
+# HEADER with logo - improved design
 # ============================================
-logo_path = Path(__file__).parent / "dedecker_logo.png"
-header_col1, header_col2 = st.columns([1, 5])
-with header_col1:
-    if logo_path.exists():
-        st.image(str(logo_path), width=120)
-with header_col2:
-    st.markdown('<p class="main-title">DeDecker Keukens — Semantic Analysis</p>', unsafe_allow_html=True)
-    st.markdown('<p class="subtitle">Belgium NL · March 2026</p>', unsafe_allow_html=True)
+logo_path = Path(__file__).parent / "dedecker-logo-1741616178.png"
+
+st.markdown("""
+<div style="display: flex; align-items: center; gap: 1.5rem; padding: 1rem 0 1.5rem 0; border-bottom: 3px solid #B8A99A; margin-bottom: 1.5rem;">
+    <img src="data:image/png;base64,{}" style="height: 60px; width: auto;" />
+    <div>
+        <h1 style="margin: 0; font-size: 1.8rem; font-weight: 600; color: #2d2d2d;">DeDecker Keukens — Semantic Analysis</h1>
+        <p style="margin: 0.2rem 0 0 0; font-size: 0.95rem; color: #666;">Belgium NL · March 2026</p>
+    </div>
+</div>
+""".format(__import__('base64').b64encode(open(str(logo_path), 'rb').read()).decode()), unsafe_allow_html=True)
 
 # ============================================
 # 1. KPIs (original 6 cards)
