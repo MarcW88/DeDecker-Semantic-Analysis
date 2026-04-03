@@ -107,19 +107,24 @@ st.markdown("""
 @st.cache_data(ttl=10)
 def load_data(market='BENL'):
     if market == 'BENL':
-        file_path = Path(__file__).parent / "Keyword Analysis_ DeDecker Keukens _ 202603.xlsx"
+        file_path = Path(__file__).parent / "keyword_analyses_keukensdedecker_BENL.xlsx"
         if not file_path.exists():
             return None, []
-        df = pd.read_excel(file_path, sheet_name='BENL')
+        df = pd.read_excel(file_path)
         df.columns = df.columns.str.strip()
         df = df.rename(columns={
-            'Positions DeDecker': 'pos_dedecker',
-            'URL DeDecker': 'url_dedecker',
-            'Presence AI_Overview': 'has_ai',
-            'Presence AI_Overview DeDecker': 'dedecker_in_ai',
-            'Sources AI_Overview_DeDecker': 'ai_sources'
+            'client_pos': 'pos_dedecker',
+            'client_url': 'url_dedecker',
+            'has_ai_overview': 'has_ai',
+            'client_in_ai': 'dedecker_in_ai',
+            'client_ai_sources': 'ai_sources',
+            'vika.be_pos': 'Vika',
+            'dsmkeukens.be_pos': 'DSM Keukens',
+            'dovykeukens.be_pos': 'Dovy',
+            'diapal.be_pos': 'Diapal',
+            'ilwa.be_pos': 'Ilwa'
         })
-        competitors = ['Eggo', 'Ixina', 'Kvik', 'Dovy']
+        competitors = ['Vika', 'DSM Keukens', 'Dovy', 'Diapal', 'Ilwa']
     else:  # BEFR
         file_path = Path(__file__).parent / "Keyword_Research_DeDecker_BEFR.xlsx"
         if not file_path.exists():
@@ -146,7 +151,9 @@ def load_data(market='BENL'):
     if 'subcategory' in df.columns:
         df['subcategory'] = df['subcategory'].str.strip()
     
-    for col in ['pos_dedecker', 'Eggo', 'Ixina', 'Kvik', 'Dovy']:
+    # Convert position columns to numeric
+    pos_cols = ['pos_dedecker'] + competitors
+    for col in pos_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
     
@@ -188,7 +195,7 @@ st.markdown("""
     <img src="data:image/png;base64,{logo}" style="height: 60px; width: auto;" />
     <div>
         <h1 style="margin: 0; font-size: 1.8rem; font-weight: 600; color: #2d2d2d;">DeDecker Keukens — Semantic Analysis</h1>
-        <p style="margin: 0.2rem 0 0 0; font-size: 0.95rem; color: #666;">{market} · March 2026</p>
+        <p style="margin: 0.2rem 0 0 0; font-size: 0.95rem; color: #666;">{market} · April 2026</p>
     </div>
 </div>
 """.format(
@@ -340,7 +347,7 @@ with comp1:
         orientation='h',
         text='Share',
         color='Competitor',
-        color_discrete_map={'DeDecker': '#8B7355', 'Eggo': '#B8A99A', 'Ixina': '#D4C4B5', 'Kvik': '#a39485', 'Dovy': '#c9b8a8'}
+        color_discrete_map={'DeDecker': '#8B7355', 'Eggo': '#B8A99A', 'Ixina': '#D4C4B5', 'Kvik': '#a39485', 'Dovy': '#c9b8a8', 'Vika': '#B8A99A', 'DSM Keukens': '#D4C4B5', 'Diapal': '#a39485', 'Ilwa': '#c9b8a8'}
     )
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
     fig.update_layout(
@@ -377,7 +384,7 @@ with comp2:
         y='Top 10 %',
         color='Competitor',
         barmode='group',
-        color_discrete_map={'DeDecker': '#8B7355', 'Eggo': '#B8A99A', 'Ixina': '#D4C4B5', 'Kvik': '#a39485', 'Dovy': '#c9b8a8'}
+        color_discrete_map={'DeDecker': '#8B7355', 'Eggo': '#B8A99A', 'Ixina': '#D4C4B5', 'Kvik': '#a39485', 'Dovy': '#c9b8a8', 'Vika': '#B8A99A', 'DSM Keukens': '#D4C4B5', 'Diapal': '#a39485', 'Ilwa': '#c9b8a8'}
     )
     fig.update_layout(
         height=350,
@@ -583,4 +590,4 @@ with col_exp2:
 
 # Footer
 st.markdown("---")
-st.markdown("<div style='text-align:center;color:#666;font-size:0.8rem;'>DeDecker Keukens · Semantic Analysis · March 2026</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center;color:#666;font-size:0.8rem;'>DeDecker Keukens · Semantic Analysis · April 2026</div>", unsafe_allow_html=True)

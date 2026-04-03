@@ -18,7 +18,11 @@ credentials/
 # Data
 data/
 *.csv
+
+# Excel files - except the ones needed for the dashboard
 *.xlsx
+!keyword_analyses_keukensdedecker_BENL.xlsx
+!Keyword_Research_DeDecker_BEFR.xlsx
 
 # IDE
 .vscode/
