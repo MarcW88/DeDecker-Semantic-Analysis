@@ -246,20 +246,12 @@ with kpi6:
 # ============================================
 st.markdown('<p class="section-header">Category Performance</p>', unsafe_allow_html=True)
 
-# Toggle and filter for category view
-cat_col1, cat_col2 = st.columns([1, 3])
-with cat_col1:
-    view_level = st.radio("View by", ["Categories", "Subcategories"], horizontal=True)
-with cat_col2:
-    if view_level == "Categories":
-        cat_filter_options = ['All'] + sorted(df['category'].dropna().unique().tolist())
-        selected_cats = st.multiselect("Filter categories", cat_filter_options, default=['All'])
-    else:
-        subcat_filter_options = ['All'] + sorted(df['subcategory'].dropna().unique().tolist())
-        selected_cats = st.multiselect("Filter subcategories", subcat_filter_options, default=['All'])
+# Filter for category view
+cat_filter_options = ['All'] + sorted(df['category'].dropna().unique().tolist())
+selected_cats = st.multiselect("Filter categories", cat_filter_options, default=['All'])
 
-# Determine grouping column
-group_col = 'category' if view_level == "Categories" else 'subcategory'
+# Grouping column
+group_col = 'category'
 
 # Filter data if needed
 df_cat_view = df.copy()
@@ -327,8 +319,7 @@ with chart1:
 with chart2:
     # Category table
     cat_display = cat_stats[[group_col, 'volume', 'keywords', 'top10', 'avg_pos', 'not_ranked']].copy()
-    col_name = 'Category' if view_level == "Categories" else 'Subcategory'
-    cat_display.columns = [col_name, 'Volume', 'Keywords', 'Top 10', 'Avg Pos', 'Not Ranked']
+    cat_display.columns = ['Category', 'Volume', 'Keywords', 'Top 10', 'Avg Pos', 'Not Ranked']
     cat_display = cat_display.sort_values('Volume', ascending=False)
     cat_display['Avg Pos'] = cat_display['Avg Pos'].round(1)
     st.dataframe(cat_display, use_container_width=True, height=400, hide_index=True)
@@ -502,18 +493,15 @@ with ai3:
 st.markdown('<p class="section-header">Keyword Explorer</p>', unsafe_allow_html=True)
 
 # Filters
-flt1, flt2, flt3, flt4 = st.columns(4)
+flt1, flt2, flt3 = st.columns(3)
 
 with flt1:
     cat_options = ['All'] + sorted(df['category'].dropna().unique().tolist())
     filter_cat = st.selectbox("Category", cat_options)
 with flt2:
-    subcat_options = ['All'] + sorted(df['subcategory'].dropna().unique().tolist())
-    filter_subcat = st.selectbox("Subcategory", subcat_options)
-with flt3:
     bucket_options = ['All', 'Top 3', '4-10', '11-20', '20+', 'Not ranked']
     filter_bucket = st.selectbox("Position", bucket_options)
-with flt4:
+with flt3:
     ai_options = ['All', 'With AI Overview', 'DeDecker in AI', 'AI Gap']
     filter_ai = st.selectbox("AI Filter", ai_options)
 
@@ -521,8 +509,6 @@ with flt4:
 dff = df.copy()
 if filter_cat != 'All':
     dff = dff[dff['category'] == filter_cat]
-if filter_subcat != 'All':
-    dff = dff[dff['subcategory'] == filter_subcat]
 if filter_bucket != 'All':
     dff = dff[dff['position_bucket'] == filter_bucket]
 if filter_ai == 'With AI Overview':
@@ -545,7 +531,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Table with conditional coloring for positions (pastel red to green)
-display_cols = ['keyword', 'volume', 'category', 'subcategory', 'pos_dedecker']
+display_cols = ['keyword', 'volume', 'category', 'pos_dedecker']
 for c in available_comp:
     display_cols.append(c)
 if 'has_ai' in dff.columns:
