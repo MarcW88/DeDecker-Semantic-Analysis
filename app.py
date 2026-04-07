@@ -211,8 +211,8 @@ total_kw = len(df)
 dedecker_top10 = len(df[df['pos_dedecker'] <= 10])
 # Avg position on ALL keywords (not ranked = 100)
 avg_pos = df['pos_dedecker'].fillna(100).mean()
-ai_presence = df['has_ai'].sum() if 'has_ai' in df.columns else 0
-dedecker_in_ai = df['dedecker_in_ai'].sum() if 'dedecker_in_ai' in df.columns else 0
+ai_presence = df['has_ai'].astype(str).str.lower().isin(['true', '1', 'yes']).sum() if 'has_ai' in df.columns else 0
+dedecker_in_ai = df['dedecker_in_ai'].astype(str).str.lower().isin(['true', '1', 'yes']).sum() if 'dedecker_in_ai' in df.columns else 0
 ai_pct = (ai_presence / total_kw * 100) if total_kw > 0 else 0
 dedecker_ai_pct = (dedecker_in_ai / ai_presence * 100) if ai_presence > 0 else 0
 sov = (dedecker_top10 / total_kw * 100) if total_kw > 0 else 0
