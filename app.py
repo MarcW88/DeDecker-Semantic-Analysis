@@ -144,6 +144,16 @@ def load_data(market='BENL'):
         })
         competitors = ['Eggo', 'Ixina', 'Kvik', 'Dovy']
     
+    # Convert boolean string columns to actual booleans
+    for bool_col in ['has_ai', 'dedecker_in_ai']:
+        if bool_col in df.columns:
+            df[bool_col] = df[bool_col].astype(str).str.lower().isin(['true', '1', 'yes', 'vrai'])
+    
+    # Convert cpc to numeric (handle commas as decimal separator)
+    if 'cpc' in df.columns:
+        df['cpc'] = df['cpc'].astype(str).str.replace(',', '.', regex=False)
+        df['cpc'] = pd.to_numeric(df['cpc'], errors='coerce')
+    
     # Normalize category names
     if 'category' in df.columns:
         df['category'] = df['category'].str.strip()
@@ -211,8 +221,8 @@ total_kw = len(df)
 dedecker_top10 = len(df[df['pos_dedecker'] <= 10])
 # Avg position on ALL keywords (not ranked = 100)
 avg_pos = df['pos_dedecker'].fillna(100).mean()
-ai_presence = df['has_ai'].astype(str).str.lower().isin(['true', '1', 'yes']).sum() if 'has_ai' in df.columns else 0
-dedecker_in_ai = df['dedecker_in_ai'].astype(str).str.lower().isin(['true', '1', 'yes']).sum() if 'dedecker_in_ai' in df.columns else 0
+ai_presence = df['has_ai'].sum() if 'has_ai' in df.columns else 0
+dedecker_in_ai = df['dedecker_in_ai'].sum() if 'dedecker_in_ai' in df.columns else 0
 ai_pct = (ai_presence / total_kw * 100) if total_kw > 0 else 0
 dedecker_ai_pct = (dedecker_in_ai / ai_presence * 100) if ai_presence > 0 else 0
 sov = (dedecker_top10 / total_kw * 100) if total_kw > 0 else 0
@@ -438,7 +448,7 @@ st.markdown('<p class="section-header">AI Overview Analysis</p>', unsafe_allow_h
 ai1, ai2, ai3 = st.columns([1, 1, 2])
 
 with ai1:
-    ai_yes = int(df['has_ai'].sum()) if 'has_ai' in df.columns else 0
+    ai_yes = int(ai_presence)
     ai_no = len(df) - ai_yes
     
     fig = px.pie(
@@ -459,7 +469,7 @@ with ai1:
 
 with ai2:
     if 'dedecker_in_ai' in df.columns:
-        df_ai = df[df['has_ai'] == True]
+        df_ai = df[df['has_ai'] == True].copy()
         cited = int(df_ai['dedecker_in_ai'].sum())
         not_cited = len(df_ai) - cited
         
