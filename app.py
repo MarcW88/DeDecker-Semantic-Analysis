@@ -126,7 +126,7 @@ def load_data(market='BENL'):
         })
         competitors = ['Vika', 'DSM Keukens', 'Dovy', 'Diapal', 'Ilwa']
     else:  # BEFR
-        file_path = Path(__file__).parent / "Keyword_Research_DeDecker_BEFR.xlsx"
+        file_path = Path(__file__).parent / "Keywords_SERP_Final_FR.xlsx"
         if not file_path.exists():
             return None, []
         df = pd.read_excel(file_path)
@@ -137,12 +137,21 @@ def load_data(market='BENL'):
             'has_ai_overview': 'has_ai',
             'client_in_ai': 'dedecker_in_ai',
             'client_ai_sources': 'ai_sources',
-            'eggo.be_pos': 'Eggo',
+            'cuisinesdovy.be_pos': 'Dovy',
             'ixina.be_pos': 'Ixina',
-            'kvik.be_pos': 'Kvik',
-            'cuisinesdovy.be_pos': 'Dovy'
+            'vandenborrekitchen.be_pos': 'Vandenborre',
+            'dsmcuisines.be_pos': 'DSM Cuisines',
+            'ilwa.be_pos': 'Ilwa'
         })
-        competitors = ['Eggo', 'Ixina', 'Kvik', 'Dovy']
+        competitors = ['Dovy', 'Ixina', 'Vandenborre', 'DSM Cuisines', 'Ilwa']
+    
+    # Add default columns if missing (e.g. BEFR SERP-only file)
+    if 'volume' not in df.columns:
+        df['volume'] = 0
+    if 'category' not in df.columns:
+        df['category'] = 'Non catégorisé'
+    if 'cpc' not in df.columns:
+        df['cpc'] = 0.0
     
     # Convert boolean string columns to actual booleans
     for bool_col in ['has_ai', 'dedecker_in_ai']:
@@ -348,7 +357,7 @@ with comp1:
         orientation='h',
         text='Share',
         color='Competitor',
-        color_discrete_map={'DeDecker': '#8B7355', 'Eggo': '#B8A99A', 'Ixina': '#D4C4B5', 'Kvik': '#a39485', 'Dovy': '#c9b8a8', 'Vika': '#B8A99A', 'DSM Keukens': '#D4C4B5', 'Diapal': '#a39485', 'Ilwa': '#c9b8a8'}
+        color_discrete_map={'DeDecker': '#8B7355', 'Eggo': '#B8A99A', 'Ixina': '#D4C4B5', 'Kvik': '#a39485', 'Dovy': '#c9b8a8', 'Vika': '#B8A99A', 'DSM Keukens': '#D4C4B5', 'Diapal': '#a39485', 'Ilwa': '#c9b8a8', 'Vandenborre': '#b5c4d4', 'DSM Cuisines': '#a5b8c9'}
     )
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
     fig.update_layout(
@@ -385,7 +394,7 @@ with comp2:
         y='Top 10 %',
         color='Competitor',
         barmode='group',
-        color_discrete_map={'DeDecker': '#8B7355', 'Eggo': '#B8A99A', 'Ixina': '#D4C4B5', 'Kvik': '#a39485', 'Dovy': '#c9b8a8', 'Vika': '#B8A99A', 'DSM Keukens': '#D4C4B5', 'Diapal': '#a39485', 'Ilwa': '#c9b8a8'}
+        color_discrete_map={'DeDecker': '#8B7355', 'Eggo': '#B8A99A', 'Ixina': '#D4C4B5', 'Kvik': '#a39485', 'Dovy': '#c9b8a8', 'Vika': '#B8A99A', 'DSM Keukens': '#D4C4B5', 'Diapal': '#a39485', 'Ilwa': '#c9b8a8', 'Vandenborre': '#b5c4d4', 'DSM Cuisines': '#a5b8c9'}
     )
     fig.update_layout(
         height=350,
