@@ -107,7 +107,7 @@ st.markdown("""
 @st.cache_data(ttl=10)
 def load_data(market='BENL'):
     if market == 'BENL':
-        file_path = Path(__file__).parent / "keyword_analyses_keukensdedecker_BENL.xlsx"
+        file_path = Path(__file__).parent / "Keyword_Research_DeDecker_BENL_FINAL .xlsx"
         if not file_path.exists():
             return None, []
         df = pd.read_excel(file_path)
