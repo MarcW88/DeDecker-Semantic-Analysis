@@ -126,7 +126,7 @@ def load_data(market='BENL'):
         })
         competitors = ['Vika', 'DSM Keukens', 'Dovy', 'Diapal', 'Ilwa']
     else:  # BEFR
-        file_path = Path(__file__).parent / "keyword_final_befr.xlsx"
+        file_path = Path(__file__).parent / "Keywords_SERP_Final_FR.xlsx"
         if not file_path.exists():
             return None, []
         df = pd.read_excel(file_path)
@@ -137,7 +137,6 @@ def load_data(market='BENL'):
             'has_ai_overview': 'has_ai',
             'client_in_ai': 'dedecker_in_ai',
             'client_ai_sources': 'ai_sources',
-            'Category': 'category',
             'cuisinesdovy.be_pos': 'Dovy',
             'ixina.be_pos': 'Ixina',
             'vandenborrekitchen.be_pos': 'Vandenborre',
