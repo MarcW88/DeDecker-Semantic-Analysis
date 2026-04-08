@@ -126,7 +126,7 @@ def load_data(market='BENL'):
         })
         competitors = ['Vika', 'DSM Keukens', 'Dovy', 'Diapal', 'Ilwa']
     else:  # BEFR
-        file_path = Path(__file__).parent / "Keywords_SERP_Final_FR.xlsx"
+        file_path = Path(__file__).parent / "Keywords_SERP_Final_FR-Dedecker.xlsx"
         if not file_path.exists():
             return None, []
         df = pd.read_excel(file_path)
