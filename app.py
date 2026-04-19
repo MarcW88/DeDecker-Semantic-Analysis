@@ -141,10 +141,9 @@ def load_data(market='BENL'):
             'cuisinesdovy.be_pos': 'Dovy',
             'ixina.be_pos': 'Ixina',
             'vandenborrekitchen.be_pos': 'Vandenborre',
-            'dsmcuisines.be_pos': 'DSM Cuisines',
-            'ilwa.be_pos': 'Ilwa'
+            'dsmcuisines.be_pos': 'DSM Cuisines'
         })
-        competitors = ['Dovy', 'Ixina', 'Vandenborre', 'DSM Cuisines', 'Ilwa']
+        competitors = ['Dovy', 'Ixina', 'Vandenborre', 'DSM Cuisines']
     
     # Add default columns if missing (e.g. BEFR SERP-only file)
     if 'volume' not in df.columns:
@@ -228,14 +227,31 @@ st.markdown("""
 # ============================================
 total_volume = df['volume'].sum()
 total_kw = len(df)
-dedecker_top10 = len(df[df['pos_dedecker'] <= 10])
+dedecker_ranked = int(df['pos_dedecker'].notna().sum())
+dedecker_top20 = int((df['pos_dedecker'] <= 20).sum())
+dedecker_top10 = int((df['pos_dedecker'] <= 10).sum())
 # Avg position on ALL keywords (not ranked = 100)
 avg_pos = df['pos_dedecker'].fillna(100).mean()
 ai_presence = df['has_ai'].sum() if 'has_ai' in df.columns else 0
 dedecker_in_ai = df['dedecker_in_ai'].sum() if 'dedecker_in_ai' in df.columns else 0
 ai_pct = (ai_presence / total_kw * 100) if total_kw > 0 else 0
 dedecker_ai_pct = (dedecker_in_ai / ai_presence * 100) if ai_presence > 0 else 0
-sov = (dedecker_top10 / total_kw * 100) if total_kw > 0 else 0
+
+# Position filter
+pos_filter_col, kpi_cols_spacer = st.columns([2, 5])
+with pos_filter_col:
+    pos_range = st.radio("Position filter", ['All Ranked', 'Top 20', 'Top 10'], horizontal=True, label_visibility='collapsed')
+
+if pos_range == 'Top 10':
+    _kpi_count = dedecker_top10
+    _kpi_label = 'DeDecker in Top 10'
+elif pos_range == 'Top 20':
+    _kpi_count = dedecker_top20
+    _kpi_label = 'DeDecker in Top 20'
+else:
+    _kpi_count = dedecker_ranked
+    _kpi_label = 'DeDecker Ranked'
+_kpi_pct = (_kpi_count / total_kw * 100) if total_kw > 0 else 0
 
 kpi1, kpi2, kpi3, kpi4, kpi5, kpi6 = st.columns(6)
 with kpi1:
@@ -243,7 +259,7 @@ with kpi1:
 with kpi2:
     st.metric("Keywords", f"{total_kw}")
 with kpi3:
-    st.metric("Keywords in Top 10", f"{dedecker_top10}", help=f"{dedecker_top10/total_kw*100:.1f}% of total")
+    st.metric(_kpi_label, f"{_kpi_count}", help=f"{_kpi_pct:.1f}% of {total_kw} keywords")
 with kpi4:
     st.metric("Avg Position", f"{avg_pos:.1f}" if pd.notna(avg_pos) else "N/A")
 with kpi5:
@@ -341,30 +357,39 @@ st.markdown('<p class="section-header">Competitive Landscape</p>', unsafe_allow_
 
 comp1, comp2 = st.columns(2)
 
+# Build global visibility data once (reused for chart + table)
+_vis_rows = []
+_dedecker_ranked = int(df['pos_dedecker'].notna().sum())
+_dedecker_top20 = int((df['pos_dedecker'] <= 20).sum())
+_dedecker_top10 = dedecker_top10
+_vis_rows.append({'Competitor': 'DeDecker', 'Ranked': _dedecker_ranked, 'Top 20': _dedecker_top20, 'Top 10': _dedecker_top10})
+for c in available_comp:
+    _c_ranked = int(df[c].notna().sum())
+    _c_top20 = int((df[c] <= 20).sum())
+    _c_top10 = int((df[c] <= 10).sum())
+    _vis_rows.append({'Competitor': c, 'Ranked': _c_ranked, 'Top 20': _c_top20, 'Top 10': _c_top10})
+_vis_df = pd.DataFrame(_vis_rows)
+
 with comp1:
-    # Global SOV (Top 10 presence)
-    visibility_data = [{'Competitor': 'DeDecker', 'Top 10': dedecker_top10, 'Share': sov, 'Label': f'{dedecker_top10} / {total_kw}'}]
-    for c in available_comp:
-        count = len(df[df[c] <= 10])
-        pct = (count / total_kw * 100) if total_kw > 0 else 0
-        visibility_data.append({'Competitor': c, 'Top 10': count, 'Share': pct, 'Label': f'{count} / {total_kw}'})
-    
-    vis_df = pd.DataFrame(visibility_data).sort_values('Top 10', ascending=True)
+    # Global SOV (all ranked keywords)
+    chart_df = _vis_df.copy()
+    chart_df['Label'] = chart_df['Ranked'].astype(str) + ' / ' + str(total_kw)
+    chart_df = chart_df.sort_values('Ranked', ascending=True)
     
     fig = px.bar(
-        vis_df, 
+        chart_df, 
         y='Competitor', 
-        x='Top 10',
+        x='Ranked',
         orientation='h',
         text='Label',
         color='Competitor',
         color_discrete_map={'DeDecker': '#8B7355', 'Eggo': '#B8A99A', 'Ixina': '#D4C4B5', 'Kvik': '#a39485', 'Dovy': '#c9b8a8', 'Vika': '#B8A99A', 'DSM Keukens': '#D4C4B5', 'Diapal': '#a39485', 'Ilwa': '#c9b8a8', 'Vandenborre': '#b5c4d4', 'DSM Cuisines': '#a5b8c9'}
     )
-    fig.update_traces(textposition='outside')
+    fig.update_traces(textposition='outside', cliponaxis=False)
     fig.update_layout(
-        height=300, 
-        margin=dict(l=0,r=0,t=30,b=0),
-        title=dict(text="Global Share of Visibility (Top 10)", font=dict(size=14)),
+        height=350, 
+        margin=dict(l=0,r=80,t=30,b=0),
+        title=dict(text="Global Share of Visibility", font=dict(size=14)),
         showlegend=False,
         plot_bgcolor='white',
         xaxis=dict(gridcolor='#f0f0f0')
@@ -411,6 +436,17 @@ with comp2:
         yaxis=dict(gridcolor='#f0f0f0')
     )
     st.plotly_chart(fig, use_container_width=True)
+
+# Global visibility summary table
+st.markdown("**Global Share of Visibility**")
+_vis_table = _vis_df.copy()
+_vis_table['Ranked %'] = (_vis_table['Ranked'] / total_kw * 100).round(1).astype(str) + '%'
+_vis_table['Top 20 %'] = (_vis_table['Top 20'] / total_kw * 100).round(1).astype(str) + '%'
+_vis_table['Top 10 %'] = (_vis_table['Top 10'] / total_kw * 100).round(1).astype(str) + '%'
+_vis_table = _vis_table.rename(columns={'Ranked': f'Ranked / {total_kw}', 'Top 20': f'Top 20 / {total_kw}', 'Top 10': f'Top 10 / {total_kw}'})
+_vis_table = _vis_table[['Competitor', f'Ranked / {total_kw}', 'Ranked %', f'Top 20 / {total_kw}', 'Top 20 %', f'Top 10 / {total_kw}', 'Top 10 %']]
+_vis_table = _vis_table.sort_values(f'Ranked / {total_kw}', ascending=False)
+st.dataframe(_vis_table, use_container_width=True, hide_index=True)
 
 # Leader by category table
 st.markdown("**Category Leaders**")
