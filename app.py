@@ -137,6 +137,7 @@ def load_data(market='BENL'):
             'has_ai_overview': 'has_ai',
             'client_in_ai': 'dedecker_in_ai',
             'client_ai_sources': 'ai_sources',
+            'Category': 'category',
             'cuisinesdovy.be_pos': 'Dovy',
             'ixina.be_pos': 'Ixina',
             'vandenborrekitchen.be_pos': 'Vandenborre',
@@ -342,11 +343,11 @@ comp1, comp2 = st.columns(2)
 
 with comp1:
     # Global SOV (Top 10 presence)
-    visibility_data = [{'Competitor': 'DeDecker', 'Top 10': dedecker_top10, 'Share': sov}]
+    visibility_data = [{'Competitor': 'DeDecker', 'Top 10': dedecker_top10, 'Share': sov, 'Label': f'{dedecker_top10} / {total_kw}'}]
     for c in available_comp:
         count = len(df[df[c] <= 10])
         pct = (count / total_kw * 100) if total_kw > 0 else 0
-        visibility_data.append({'Competitor': c, 'Top 10': count, 'Share': pct})
+        visibility_data.append({'Competitor': c, 'Top 10': count, 'Share': pct, 'Label': f'{count} / {total_kw}'})
     
     vis_df = pd.DataFrame(visibility_data).sort_values('Top 10', ascending=True)
     
@@ -355,11 +356,11 @@ with comp1:
         y='Competitor', 
         x='Top 10',
         orientation='h',
-        text='Share',
+        text='Label',
         color='Competitor',
         color_discrete_map={'DeDecker': '#8B7355', 'Eggo': '#B8A99A', 'Ixina': '#D4C4B5', 'Kvik': '#a39485', 'Dovy': '#c9b8a8', 'Vika': '#B8A99A', 'DSM Keukens': '#D4C4B5', 'Diapal': '#a39485', 'Ilwa': '#c9b8a8', 'Vandenborre': '#b5c4d4', 'DSM Cuisines': '#a5b8c9'}
     )
-    fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+    fig.update_traces(textposition='outside')
     fig.update_layout(
         height=300, 
         margin=dict(l=0,r=0,t=30,b=0),
@@ -370,10 +371,15 @@ with comp1:
     )
     st.plotly_chart(fig, use_container_width=True)
 
+# Categories to exclude from competitive landscape
+_branding_cats = {'Branding', 'Marque et valeurs'}
+
 with comp2:
     # SOV by category (grouped bar)
     sov_by_cat = []
     for cat in df['category'].dropna().unique():
+        if cat in _branding_cats:
+            continue
         df_cat = df[df['category'] == cat]
         cat_total = len(df_cat)
         
@@ -410,6 +416,8 @@ with comp2:
 st.markdown("**Category Leaders**")
 leader_data = []
 for cat in df['category'].dropna().unique():
+    if cat in _branding_cats:
+        continue
     df_cat = df[df['category'] == cat]
     cat_total = len(df_cat)
     
@@ -550,10 +558,12 @@ if 'has_ai' in dff.columns:
 df_display = dff[display_cols].sort_values('volume', ascending=False).copy()
 
 # Convert position columns to integers (no decimals)
+# Use NaN (not None) so Streamlit sorts them to the bottom
 pos_cols = ['pos_dedecker'] + available_comp
 for col in pos_cols:
     if col in df_display.columns:
-        df_display[col] = df_display[col].apply(lambda x: int(x) if pd.notna(x) else None)
+        df_display[col] = pd.to_numeric(df_display[col], errors='coerce')
+        df_display[col] = df_display[col].where(df_display[col].notna(), np.nan)
 
 # Convert volume to integer
 df_display['volume'] = df_display['volume'].astype(int)
@@ -577,7 +587,7 @@ def color_position(val):
 # Apply styling with format to remove decimals
 styled_df = df_display.style.map(color_position, subset=pos_cols).format(
     {col: lambda x: '' if pd.isna(x) else f'{int(x)}' for col in pos_cols},
-    na_rep=''
+    na_rep='-'
 )
 
 st.dataframe(
