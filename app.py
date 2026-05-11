@@ -165,8 +165,29 @@ def load_data(market='BENL'):
             'vandenborrekitchen.be_pos': 'Vandenborre',
             'dsmcuisines.be_pos': 'DSM Cuisines'
         })
-        competitors = ['Dovy', 'Ixina', 'Vandenborre', 'DSM Cuisines']
-        comp_map = {'default': [c for c in competitors if c in df.columns]}
+        cuisine_comp = ['Dovy', 'Ixina', 'Vandenborre', 'DSM Cuisines']
+        sdb_comp = []
+        
+        # Load salle de bains competitor file and merge
+        sdb_path = Path(__file__).parent / "Keywords_SERP_Final_salle_de_bains.xlsx"
+        if sdb_path.exists():
+            df_sdb = pd.read_excel(sdb_path)
+            df_sdb.columns = df_sdb.columns.str.strip()
+            df_sdb = df_sdb.rename(columns={
+                'sanijura.be_pos': 'Sanijura',
+                'mobalpa.be_pos': 'Mobalpa',
+                'x2o.be_pos': 'X2O',
+                'facq.be_pos': 'Facq',
+                'vanmarcke.com_pos': 'Vanmarcke'
+            })
+            sdb_comp = ['Sanijura', 'Mobalpa', 'X2O', 'Facq', 'Vanmarcke']
+            sdb_cols = ['keyword'] + [c for c in sdb_comp if c in df_sdb.columns]
+            df = df.merge(df_sdb[sdb_cols], on='keyword', how='left')
+        
+        comp_map = {
+            'Salle de bains': [c for c in sdb_comp if c in df.columns],
+            'default': [c for c in cuisine_comp if c in df.columns],
+        }
     
     # Add default columns if missing (e.g. BEFR SERP-only file)
     if 'volume' not in df.columns:
@@ -189,7 +210,10 @@ def load_data(market='BENL'):
     # Normalize category names
     if 'category' in df.columns:
         df['category'] = df['category'].str.strip()
-        df['category'] = df['category'].replace({'keukens': 'Keukens'})
+        df['category'] = df['category'].replace({
+            'keukens': 'Keukens',
+            'Intérieur & sur-mesure': 'Intérieur & Sur-mesure'
+        })
     if 'subcategory' in df.columns:
         df['subcategory'] = df['subcategory'].str.strip()
     
@@ -404,6 +428,7 @@ _color_map = {
     'Groep Wouters': '#7ca6b0', 'De Badbeke': '#9bbcc4', 'X2O': '#6b9aa5',
     'Facq': '#8ab4bf', 'Vanmarcke': '#a5c8d1',
     'Ixina': '#D4C4B5', 'Vandenborre': '#b5c4d4', 'DSM Cuisines': '#a5b8c9',
+    'Sanijura': '#7ca6b0', 'Mobalpa': '#9bbcc4',
     'Eggo': '#B8A99A', 'Kvik': '#a39485',
 }
 
