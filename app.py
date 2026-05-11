@@ -109,7 +109,7 @@ def load_data(market='BENL'):
     if market == 'BENL':
         file_path = Path(__file__).parent / "Keyword_Research_DeDecker_BENL_FINAL .xlsx"
         if not file_path.exists():
-            return None, []
+            return None, {}
         df = pd.read_excel(file_path)
         df.columns = df.columns.str.strip()
         df = df.rename(columns={
@@ -124,11 +124,33 @@ def load_data(market='BENL'):
             'diapal.be_pos': 'Diapal',
             'ilwa.be_pos': 'Ilwa'
         })
-        competitors = ['Vika', 'DSM Keukens', 'Dovy', 'Diapal', 'Ilwa']
+        keukens_comp = ['Vika', 'DSM Keukens', 'Dovy', 'Diapal']
+        bad_comp = []
+        
+        # Load badkamers competitor file and merge
+        bad_path = Path(__file__).parent / "Keywords_SERP_Final_badkamers_dedecker.xlsx"
+        if bad_path.exists():
+            df_bad = pd.read_excel(bad_path)
+            df_bad.columns = df_bad.columns.str.strip()
+            df_bad = df_bad.rename(columns={
+                'groepwouters.be_pos': 'Groep Wouters',
+                'debadbeke.be_pos': 'De Badbeke',
+                'x2o.be_pos': 'X2O',
+                'facq.be_pos': 'Facq',
+                'vanmarcke.com_pos': 'Vanmarcke'
+            })
+            bad_comp = ['Groep Wouters', 'De Badbeke', 'X2O', 'Facq', 'Vanmarcke']
+            bad_cols = ['keyword'] + [c for c in bad_comp if c in df_bad.columns]
+            df = df.merge(df_bad[bad_cols], on='keyword', how='left')
+        
+        comp_map = {
+            'Badkamers': [c for c in bad_comp if c in df.columns],
+            'default': [c for c in keukens_comp if c in df.columns],
+        }
     else:  # BEFR
         file_path = Path(__file__).parent / "Keywords_SERP_Final_FR-Dedecker.xlsx"
         if not file_path.exists():
-            return None, []
+            return None, {}
         df = pd.read_excel(file_path)
         df.columns = df.columns.str.strip()
         df = df.rename(columns={
@@ -144,6 +166,7 @@ def load_data(market='BENL'):
             'dsmcuisines.be_pos': 'DSM Cuisines'
         })
         competitors = ['Dovy', 'Ixina', 'Vandenborre', 'DSM Cuisines']
+        comp_map = {'default': [c for c in competitors if c in df.columns]}
     
     # Add default columns if missing (e.g. BEFR SERP-only file)
     if 'volume' not in df.columns:
@@ -170,8 +193,11 @@ def load_data(market='BENL'):
     if 'subcategory' in df.columns:
         df['subcategory'] = df['subcategory'].str.strip()
     
+    # All competitor columns (union of all sets)
+    all_comp = list({c for comps in comp_map.values() for c in comps})
+    
     # Convert position columns to numeric
-    pos_cols = ['pos_dedecker'] + competitors
+    pos_cols = ['pos_dedecker'] + all_comp
     for col in pos_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -190,9 +216,12 @@ def load_data(market='BENL'):
             return "20+"
     
     df['position_bucket'] = df['pos_dedecker'].apply(get_position_bucket)
-    available_comp = [c for c in competitors if c in df.columns]
     
-    return df, available_comp
+    return df, comp_map
+
+def get_comp_for_cat(cat, comp_map):
+    """Return the competitor list relevant for a given category."""
+    return comp_map.get(cat, comp_map.get('default', []))
 
 # ============================================
 # HEADER with logo and market selector
@@ -204,10 +233,12 @@ with header_col3:
     market = st.selectbox("Market", ["Belgium NL", "Belgium FR"], label_visibility="collapsed")
 market_code = 'BENL' if market == "Belgium NL" else 'BEFR'
 
-df, available_comp = load_data(market_code)
+df, comp_map = load_data(market_code)
 if df is None:
     st.error("File not found")
     st.stop()
+# All competitor columns across all categories
+all_comp = list({c for comps in comp_map.values() for c in comps})
 
 st.markdown("""
 <div style="display: flex; align-items: center; gap: 1.5rem; padding: 1rem 0 1.5rem 0; border-bottom: 3px solid #B8A99A; margin-bottom: 1.5rem;">
@@ -223,17 +254,34 @@ st.markdown("""
 ), unsafe_allow_html=True)
 
 # ============================================
-# 1. KPIs (original 6 cards)
+# GLOBAL CATEGORY FILTER
 # ============================================
-total_volume = df['volume'].sum()
-total_kw = len(df)
-dedecker_ranked = int(df['pos_dedecker'].notna().sum())
-dedecker_top20 = int((df['pos_dedecker'] <= 20).sum())
-dedecker_top10 = int((df['pos_dedecker'] <= 10).sum())
-# Avg position on ALL keywords (not ranked = 100)
-avg_pos = df['pos_dedecker'].fillna(100).mean()
-ai_presence = df['has_ai'].sum() if 'has_ai' in df.columns else 0
-dedecker_in_ai = df['dedecker_in_ai'].sum() if 'dedecker_in_ai' in df.columns else 0
+_branding_cats = {'Branding', 'Marque et valeurs'}
+_all_cats = [c for c in sorted(df['category'].dropna().unique().tolist()) if c not in _branding_cats]
+
+gf1, gf2 = st.columns([1, 4])
+with gf1:
+    global_cat = st.selectbox("Category", ['All'] + _all_cats, key='global_cat')
+
+# Filtered dataframe used everywhere
+if global_cat == 'All':
+    dff = df[~df['category'].isin(_branding_cats)].copy()
+    active_comp = all_comp
+else:
+    dff = df[df['category'] == global_cat].copy()
+    active_comp = get_comp_for_cat(global_cat, comp_map)
+
+# ============================================
+# 1. KPIs
+# ============================================
+total_volume = dff['volume'].sum()
+total_kw = len(dff)
+dedecker_ranked = int(dff['pos_dedecker'].notna().sum())
+dedecker_top20 = int((dff['pos_dedecker'] <= 20).sum())
+dedecker_top10 = int((dff['pos_dedecker'] <= 10).sum())
+avg_pos = dff['pos_dedecker'].fillna(100).mean()
+ai_presence = dff['has_ai'].sum() if 'has_ai' in dff.columns else 0
+dedecker_in_ai = dff['dedecker_in_ai'].sum() if 'dedecker_in_ai' in dff.columns else 0
 ai_pct = (ai_presence / total_kw * 100) if total_kw > 0 else 0
 dedecker_ai_pct = (dedecker_in_ai / ai_presence * 100) if ai_presence > 0 else 0
 
@@ -272,17 +320,8 @@ with kpi6:
 # ============================================
 st.markdown('<p class="section-header">Category Performance</p>', unsafe_allow_html=True)
 
-# Filter for category view
-cat_filter_options = ['All'] + sorted(df['category'].dropna().unique().tolist())
-selected_cats = st.multiselect("Filter categories", cat_filter_options, default=['All'])
-
-# Grouping column
 group_col = 'category'
-
-# Filter data if needed
-df_cat_view = df.copy()
-if 'All' not in selected_cats and len(selected_cats) > 0:
-    df_cat_view = df_cat_view[df_cat_view[group_col].isin(selected_cats)]
+df_cat_view = dff.copy()
 
 # Calculate position distribution per category/subcategory
 bucket_order = ['Top 3', '4-10', '11-20', '20+', 'Not ranked']
@@ -290,7 +329,9 @@ cat_bucket = df_cat_view.groupby([group_col, 'position_bucket']).size().reset_in
 cat_totals = df_cat_view.groupby(group_col).size().reset_index(name='total')
 cat_bucket = cat_bucket.merge(cat_totals, on=group_col)
 cat_bucket['pct'] = (cat_bucket['count'] / cat_bucket['total'] * 100).round(1)
-cat_bucket['position_bucket'] = pd.Categorical(cat_bucket['position_bucket'], categories=bucket_order, ordered=True)
+cat_bucket['position_bucket'] = cat_bucket['position_bucket'].astype(str)
+cat_bucket['_bucket_sort'] = cat_bucket['position_bucket'].map({b: i for i, b in enumerate(bucket_order)})
+cat_bucket = cat_bucket.sort_values('_bucket_sort').drop(columns='_bucket_sort')
 
 # Category stats for table
 cat_stats = df_cat_view.groupby(group_col).agg({
@@ -328,7 +369,6 @@ with chart1:
             '20+': '#E5DDD4',
             'Not ranked': '#c9a59a'
         },
-        category_orders={'position_bucket': bucket_order},
         labels={'count': 'Keywords', group_col: '', 'position_bucket': 'Position'},
         barmode='stack'
     )
@@ -357,21 +397,29 @@ st.markdown('<p class="section-header">Competitive Landscape</p>', unsafe_allow_
 
 comp1, comp2 = st.columns(2)
 
-# Build global visibility data once (reused for chart + table)
-_vis_rows = []
-_dedecker_ranked = int(df['pos_dedecker'].notna().sum())
-_dedecker_top20 = int((df['pos_dedecker'] <= 20).sum())
-_dedecker_top10 = dedecker_top10
-_vis_rows.append({'Competitor': 'DeDecker', 'Ranked': _dedecker_ranked, 'Top 20': _dedecker_top20, 'Top 10': _dedecker_top10})
-for c in available_comp:
-    _c_ranked = int(df[c].notna().sum())
-    _c_top20 = int((df[c] <= 20).sum())
-    _c_top10 = int((df[c] <= 10).sum())
-    _vis_rows.append({'Competitor': c, 'Ranked': _c_ranked, 'Top 20': _c_top20, 'Top 10': _c_top10})
+# Color map for all possible competitors
+_color_map = {
+    'DeDecker': '#8B7355', 'Vika': '#B8A99A', 'DSM Keukens': '#D4C4B5',
+    'Dovy': '#c9b8a8', 'Diapal': '#a39485', 'Ilwa': '#c9b8a8',
+    'Groep Wouters': '#7ca6b0', 'De Badbeke': '#9bbcc4', 'X2O': '#6b9aa5',
+    'Facq': '#8ab4bf', 'Vanmarcke': '#a5c8d1',
+    'Ixina': '#D4C4B5', 'Vandenborre': '#b5c4d4', 'DSM Cuisines': '#a5b8c9',
+    'Eggo': '#B8A99A', 'Kvik': '#a39485',
+}
+
+# Build visibility data using filtered dff + active_comp
+_vis_rows = [{'Competitor': 'DeDecker',
+    'Ranked': int(dff['pos_dedecker'].notna().sum()),
+    'Top 20': int((dff['pos_dedecker'] <= 20).sum()),
+    'Top 10': int((dff['pos_dedecker'] <= 10).sum())}]
+for c in active_comp:
+    _vis_rows.append({'Competitor': c,
+        'Ranked': int(dff[c].notna().sum()),
+        'Top 20': int((dff[c] <= 20).sum()),
+        'Top 10': int((dff[c] <= 10).sum())})
 _vis_df = pd.DataFrame(_vis_rows)
 
 with comp1:
-    # Global SOV (all ranked keywords)
     chart_df = _vis_df.copy()
     chart_df['Label'] = chart_df['Ranked'].astype(str) + ' / ' + str(total_kw)
     chart_df = chart_df.sort_values('Ranked', ascending=True)
@@ -383,37 +431,31 @@ with comp1:
         orientation='h',
         text='Label',
         color='Competitor',
-        color_discrete_map={'DeDecker': '#8B7355', 'Eggo': '#B8A99A', 'Ixina': '#D4C4B5', 'Kvik': '#a39485', 'Dovy': '#c9b8a8', 'Vika': '#B8A99A', 'DSM Keukens': '#D4C4B5', 'Diapal': '#a39485', 'Ilwa': '#c9b8a8', 'Vandenborre': '#b5c4d4', 'DSM Cuisines': '#a5b8c9'}
+        color_discrete_map=_color_map
     )
     fig.update_traces(textposition='outside', cliponaxis=False)
     fig.update_layout(
         height=350, 
         margin=dict(l=0,r=80,t=30,b=0),
-        title=dict(text="Global Share of Visibility", font=dict(size=14)),
+        title=dict(text="Share of Visibility", font=dict(size=14)),
         showlegend=False,
         plot_bgcolor='white',
         xaxis=dict(gridcolor='#f0f0f0')
     )
     st.plotly_chart(fig, use_container_width=True)
 
-# Categories to exclude from competitive landscape
-_branding_cats = {'Branding', 'Marque et valeurs'}
-
 with comp2:
-    # SOV by category (grouped bar)
+    # SOV by category — uses categories present in filtered data
     sov_by_cat = []
-    for cat in df['category'].dropna().unique():
-        if cat in _branding_cats:
-            continue
-        df_cat = df[df['category'] == cat]
+    for cat in dff['category'].dropna().unique():
+        df_cat = dff[dff['category'] == cat]
         cat_total = len(df_cat)
+        cat_comps = get_comp_for_cat(cat, comp_map)
         
-        # DeDecker
         dd_top10 = len(df_cat[df_cat['pos_dedecker'] <= 10])
         sov_by_cat.append({'Category': cat, 'Competitor': 'DeDecker', 'Top 10 %': (dd_top10/cat_total*100) if cat_total > 0 else 0})
         
-        # Competitors
-        for c in available_comp:
+        for c in cat_comps:
             c_top10 = len(df_cat[df_cat[c] <= 10])
             sov_by_cat.append({'Category': cat, 'Competitor': c, 'Top 10 %': (c_top10/cat_total*100) if cat_total > 0 else 0})
     
@@ -425,7 +467,7 @@ with comp2:
         y='Top 10 %',
         color='Competitor',
         barmode='group',
-        color_discrete_map={'DeDecker': '#8B7355', 'Eggo': '#B8A99A', 'Ixina': '#D4C4B5', 'Kvik': '#a39485', 'Dovy': '#c9b8a8', 'Vika': '#B8A99A', 'DSM Keukens': '#D4C4B5', 'Diapal': '#a39485', 'Ilwa': '#c9b8a8', 'Vandenborre': '#b5c4d4', 'DSM Cuisines': '#a5b8c9'}
+        color_discrete_map=_color_map
     )
     fig.update_layout(
         height=350,
@@ -437,28 +479,27 @@ with comp2:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-# Global visibility summary table
-st.markdown("**Global Share of Visibility**")
-_vis_table = _vis_df.copy()
-_vis_table['Ranked %'] = (_vis_table['Ranked'] / total_kw * 100).round(1).astype(str) + '%'
-_vis_table['Top 20 %'] = (_vis_table['Top 20'] / total_kw * 100).round(1).astype(str) + '%'
-_vis_table['Top 10 %'] = (_vis_table['Top 10'] / total_kw * 100).round(1).astype(str) + '%'
-_vis_table = _vis_table.rename(columns={'Ranked': f'Ranked / {total_kw}', 'Top 20': f'Top 20 / {total_kw}', 'Top 10': f'Top 10 / {total_kw}'})
-_vis_table = _vis_table[['Competitor', f'Ranked / {total_kw}', 'Ranked %', f'Top 20 / {total_kw}', 'Top 20 %', f'Top 10 / {total_kw}', 'Top 10 %']]
-_vis_table = _vis_table.sort_values(f'Ranked / {total_kw}', ascending=False)
-st.dataframe(_vis_table, use_container_width=True, hide_index=True)
+# Visibility summary table
+st.markdown("**Share of Visibility**")
+_tbl = _vis_df.copy()
+_tbl['Ranked %'] = (_tbl['Ranked'] / total_kw * 100).round(1).astype(str) + '%'
+_tbl['Top 20 %'] = (_tbl['Top 20'] / total_kw * 100).round(1).astype(str) + '%'
+_tbl['Top 10 %'] = (_tbl['Top 10'] / total_kw * 100).round(1).astype(str) + '%'
+_tbl = _tbl.rename(columns={'Ranked': f'Ranked / {total_kw}', 'Top 20': f'Top 20 / {total_kw}', 'Top 10': f'Top 10 / {total_kw}'})
+_tbl = _tbl[['Competitor', f'Ranked / {total_kw}', 'Ranked %', f'Top 20 / {total_kw}', 'Top 20 %', f'Top 10 / {total_kw}', 'Top 10 %']]
+_tbl = _tbl.sort_values(f'Ranked / {total_kw}', ascending=False)
+st.dataframe(_tbl, use_container_width=True, hide_index=True)
 
 # Leader by category table
 st.markdown("**Category Leaders**")
 leader_data = []
-for cat in df['category'].dropna().unique():
-    if cat in _branding_cats:
-        continue
-    df_cat = df[df['category'] == cat]
+for cat in dff['category'].dropna().unique():
+    df_cat = dff[dff['category'] == cat]
     cat_total = len(df_cat)
+    cat_comps = get_comp_for_cat(cat, comp_map)
     
     scores = {'DeDecker': len(df_cat[df_cat['pos_dedecker'] <= 10])}
-    for c in available_comp:
+    for c in cat_comps:
         scores[c] = len(df_cat[df_cat[c] <= 10])
     
     # Only consider as leader if someone has at least 1 position in top 10
@@ -493,7 +534,7 @@ ai1, ai2, ai3 = st.columns([1, 1, 2])
 
 with ai1:
     ai_yes = int(ai_presence)
-    ai_no = len(df) - ai_yes
+    ai_no = total_kw - ai_yes
     
     fig = px.pie(
         values=[ai_yes, ai_no], 
@@ -512,8 +553,8 @@ with ai1:
     st.plotly_chart(fig, use_container_width=True)
 
 with ai2:
-    if 'dedecker_in_ai' in df.columns:
-        df_ai = df[df['has_ai'] == True].copy()
+    if 'dedecker_in_ai' in dff.columns:
+        df_ai = dff[dff['has_ai'] == True].copy()
         cited = int(df_ai['dedecker_in_ai'].sum())
         not_cited = len(df_ai) - cited
         
@@ -534,7 +575,7 @@ with ai2:
         st.plotly_chart(fig, use_container_width=True)
 
 with ai3:
-    df_ai_table = df[df['has_ai'] == True][['keyword', 'volume', 'category', 'pos_dedecker', 'dedecker_in_ai']].copy()
+    df_ai_table = dff[dff['has_ai'] == True][['keyword', 'volume', 'category', 'pos_dedecker', 'dedecker_in_ai']].copy()
     df_ai_table.columns = ['Keyword', 'Volume', 'Category', 'Position', 'In AI']
     df_ai_table = df_ai_table.sort_values('Volume', ascending=False)
     df_ai_table['In AI'] = df_ai_table['In AI'].apply(lambda x: 'Yes' if x else 'No')
@@ -545,31 +586,26 @@ with ai3:
 # ============================================
 st.markdown('<p class="section-header">Keyword Explorer</p>', unsafe_allow_html=True)
 
-# Filters
-flt1, flt2, flt3 = st.columns(3)
+# Filters (category is already global)
+flt1, flt2 = st.columns(2)
 
 with flt1:
-    cat_options = ['All'] + sorted(df['category'].dropna().unique().tolist())
-    filter_cat = st.selectbox("Category", cat_options)
-with flt2:
     bucket_options = ['All', 'Top 3', '4-10', '11-20', '20+', 'Not ranked']
     filter_bucket = st.selectbox("Position", bucket_options)
-with flt3:
+with flt2:
     ai_options = ['All', 'With AI Overview', 'DeDecker in AI', 'AI Gap']
     filter_ai = st.selectbox("AI Filter", ai_options)
 
-# Apply filters
-dff = df.copy()
-if filter_cat != 'All':
-    dff = dff[dff['category'] == filter_cat]
+# Apply sub-filters on already category-filtered dff
+dff_explorer = dff.copy()
 if filter_bucket != 'All':
-    dff = dff[dff['position_bucket'] == filter_bucket]
+    dff_explorer = dff_explorer[dff_explorer['position_bucket'] == filter_bucket]
 if filter_ai == 'With AI Overview':
-    dff = dff[dff['has_ai'] == True]
+    dff_explorer = dff_explorer[dff_explorer['has_ai'] == True]
 elif filter_ai == 'DeDecker in AI':
-    dff = dff[dff['dedecker_in_ai'] == True]
+    dff_explorer = dff_explorer[dff_explorer['dedecker_in_ai'] == True]
 elif filter_ai == 'AI Gap':
-    dff = dff[(dff['has_ai'] == True) & (dff['dedecker_in_ai'] != True)]
+    dff_explorer = dff_explorer[(dff_explorer['has_ai'] == True) & (dff_explorer['dedecker_in_ai'] != True)]
 
 # Legend for position colors
 st.markdown("""
@@ -585,17 +621,18 @@ st.markdown("""
 
 # Table with conditional coloring for positions (pastel red to green)
 display_cols = ['keyword', 'volume', 'category', 'pos_dedecker']
-for c in available_comp:
-    display_cols.append(c)
-if 'has_ai' in dff.columns:
+for c in active_comp:
+    if c in dff_explorer.columns:
+        display_cols.append(c)
+if 'has_ai' in dff_explorer.columns:
     display_cols.append('has_ai')
 
 # Prepare dataframe for display - clean all numeric columns
-df_display = dff[display_cols].sort_values('volume', ascending=False).copy()
+df_display = dff_explorer[display_cols].sort_values('volume', ascending=False).copy()
 
 # Convert position columns to integers (no decimals)
 # Use NaN (not None) so Streamlit sorts them to the bottom
-pos_cols = ['pos_dedecker'] + available_comp
+pos_cols = ['pos_dedecker'] + [c for c in active_comp if c in df_display.columns]
 for col in pos_cols:
     if col in df_display.columns:
         df_display[col] = pd.to_numeric(df_display[col], errors='coerce')
@@ -636,7 +673,7 @@ st.dataframe(
 # Export
 col_exp1, col_exp2 = st.columns([4, 1])
 with col_exp2:
-    csv = dff.to_csv(index=False).encode('utf-8')
+    csv = dff_explorer.to_csv(index=False).encode('utf-8')
     st.download_button("Export CSV", csv, "dedecker_keywords.csv", "text/csv")
 
 # Footer
