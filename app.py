@@ -217,8 +217,9 @@ def load_data(market='BENL'):
     if 'subcategory' in df.columns:
         df['subcategory'] = df['subcategory'].str.strip()
     
-    # All competitor columns (union of all sets)
-    all_comp = list({c for comps in comp_map.values() for c in comps})
+    # All competitor columns: default first, then category-specific
+    _def = comp_map.get('default', [])
+    all_comp = _def + [c for k, v in comp_map.items() if k != 'default' for c in v if c not in _def]
     
     # Convert position columns to numeric
     pos_cols = ['pos_dedecker'] + all_comp
@@ -261,8 +262,10 @@ df, comp_map = load_data(market_code)
 if df is None:
     st.error("File not found")
     st.stop()
-# All competitor columns across all categories
-all_comp = list({c for comps in comp_map.values() for c in comps})
+# All competitor columns: default (cuisine) first, then category-specific (sdb/badkamers)
+_default_comp = comp_map.get('default', [])
+_other_comp = [c for k, comps in comp_map.items() if k != 'default' for c in comps if c not in _default_comp]
+all_comp = _default_comp + _other_comp
 
 st.markdown("""
 <div style="display: flex; align-items: center; gap: 1.5rem; padding: 1rem 0 1.5rem 0; border-bottom: 3px solid #B8A99A; margin-bottom: 1.5rem;">
@@ -503,7 +506,7 @@ with comp2:
     fig.update_layout(
         height=350,
         margin=dict(l=0,r=0,t=30,b=0),
-        title=dict(text="Share of Visibility by Category", font=dict(size=14)),
+        title=dict(text="Share of Visibility by Category (Top 10)", font=dict(size=14)),
         plot_bgcolor='white',
         legend=dict(orientation='h', y=-0.2),
         yaxis=dict(gridcolor='#f0f0f0')
