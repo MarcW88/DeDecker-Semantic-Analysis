@@ -421,15 +421,21 @@ st.markdown('<p class="section-header">Competitive Landscape</p>', unsafe_allow_
 
 comp1, comp2 = st.columns(2)
 
-# Color map for all possible competitors
+# Color palettes per universe
+# DeDecker — signature brown
+# Cuisine / Keukens — warm terracotta & sand tones
+# Salle de bains / Badkamers — cool ocean blues
+# Intérieur — muted sage greens
 _color_map = {
-    'DeDecker': '#8B7355', 'Vika': '#B8A99A', 'DSM Keukens': '#D4C4B5',
-    'Dovy': '#c9b8a8', 'Diapal': '#a39485', 'Ilwa': '#c9b8a8',
-    'Groep Wouters': '#7ca6b0', 'De Badbeke': '#9bbcc4', 'X2O': '#6b9aa5',
-    'Facq': '#8ab4bf', 'Vanmarcke': '#a5c8d1',
-    'Ixina': '#D4C4B5', 'Vandenborre': '#b5c4d4', 'DSM Cuisines': '#a5b8c9',
-    'Sanijura': '#7ca6b0', 'Mobalpa': '#9bbcc4',
-    'Eggo': '#B8A99A', 'Kvik': '#a39485',
+    'DeDecker': '#8B7355',
+    # Cuisine / Keukens
+    'Vika': '#C4956A', 'DSM Keukens': '#D4A87C', 'Dovy': '#B07D56',
+    'Diapal': '#D9B99B', 'Ixina': '#C48B5C', 'Vandenborre': '#DDB892',
+    'DSM Cuisines': '#CB9B6A', 'Eggo': '#D1A57E', 'Kvik': '#BA8E6E',
+    # Salle de bains / Badkamers
+    'X2O': '#4A90A4', 'Facq': '#6AAFC3', 'Vanmarcke': '#82C0D2',
+    'Groep Wouters': '#3D7A8C', 'De Badbeke': '#5B9FB3',
+    'Sanijura': '#4E8FA0', 'Mobalpa': '#72B5C8',
 }
 
 # Build visibility data using filtered dff + active_comp
